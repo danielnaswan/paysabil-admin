@@ -23,7 +23,7 @@
                         <div class="form-group">
                             <label for="student_id" class="form-control-label">Select Student</label>
                             <select class="form-control" id="student_id" name="student_id" required>
-                                <option value="">Choose a student...</option>
+                                <option value="">Choose a student</option>
                                 @foreach($students as $student)
                                     <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
                                         {{ $student->full_name }} ({{ $student->matrix_no }})

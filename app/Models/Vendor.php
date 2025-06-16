@@ -13,10 +13,9 @@ class Vendor extends Model
         'id',
         'business_name',
         'service_category',
-        'experience_years',
-        'average_rating',
-        'total_reviews',
-        'profile_picture_url',
+        'experience_years', //default 0
+        'average_rating', //default 0
+        'total_reviews', //default 0
         'user_id'
     ];
 
@@ -34,4 +33,10 @@ class Vendor extends Model
     {
         return $this->hasMany(Service::class);
     }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
 }

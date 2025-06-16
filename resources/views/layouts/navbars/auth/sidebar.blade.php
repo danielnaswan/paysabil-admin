@@ -108,8 +108,8 @@
 
             {{-- Report Generator --}}
             <li class="nav-item">
-                <a class="nav-link {{ Request::is('') ? 'active' : '' }}"
-                    href="{{ url('') }}">
+                <a class="nav-link {{ Request::is('report') ? 'active' : '' }}"
+                    href="{{ url('report') }}">
                     <div
                         class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="ni ni-single-copy-04 text-dark text-sm opacity-10"></i>

@@ -18,7 +18,7 @@ class VendorController extends Controller
     public function index()
     {
         $vendors = Vendor::with('user')->get();
-        return view('pages/vendor/vendor', compact('vendors'));
+        return view('pages/vendor/vendor', compact(['vendors']));
     }
 
     /**
@@ -40,21 +40,13 @@ class VendorController extends Controller
             'experience_years' => 'required|integer|min:0',
             'email' => 'required|string|email|max:255|unique:users',
             'phone_number' => 'required|string|max:15',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:5|confirmed',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         DB::beginTransaction();
 
         try {
-            $user = User::create([
-                'name' => $request->business_name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'phone_number' => $request->phone_number,
-                'role' => 'VENDOR'
-            ]);
-
             $profilePictureUrl = null;
             if ($request->hasFile('profile_picture')) {
                 $file = $request->file('profile_picture');
@@ -63,12 +55,20 @@ class VendorController extends Controller
                 $profilePictureUrl = Storage::url($filePath);
             }
 
+            $user = User::create([
+                'name' => $request->business_name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone_number' => $request->phone_number,
+                'profile_picture_url' => $profilePictureUrl,
+                'role' => 'VENDOR'
+            ]);
+
             $vendor = new Vendor();
-            $vendor->id = Str::uuid();
             $vendor->business_name = $request->business_name;
             $vendor->service_category = $request->service_category;
             $vendor->experience_years = $request->experience_years;
-            $vendor->profile_picture_url = $profilePictureUrl;
+            // $vendor->profile_picture_url = $profilePictureUrl;
             $vendor->user_id = $user->id;
             $vendor->save();
 
@@ -88,7 +88,7 @@ class VendorController extends Controller
     public function show(string $id)
     {
         $vendor = Vendor::with(['user', 'services'])->findOrFail($id);
-        return view('pages/vendor/show-vendor', compact('vendor'));
+        return view('pages/vendor/show-vendor', compact(['vendor',]));
     }
 
     /**
@@ -97,7 +97,7 @@ class VendorController extends Controller
     public function edit(string $id)
     {
         $vendor = Vendor::with('user')->findOrFail($id);
-        return view('pages/vendor/edit-vendor', compact('vendor'));
+        return view('pages/vendor/edit-vendor', compact(['vendor',]));
     }
 
     /**
@@ -126,20 +126,23 @@ class VendorController extends Controller
             ]);
 
             if ($request->hasFile('profile_picture')) {
-                if ($vendor->profile_picture_url) {
-                    Storage::delete(str_replace('/storage', 'public', $vendor->profile_picture_url));
+                if ($vendor->user->profile_picture_url) {
+                    Storage::delete(str_replace('/storage', 'public', $vendor->user->profile_picture_url));
                 }
 
                 $file = $request->file('profile_picture');
                 $fileName = time() . '_' . $file->getClientOriginalName();
                 $filePath = $file->storeAs('public/profile_pictures', $fileName);
-                $vendor->profile_picture_url = Storage::url($filePath);
+                $vendor->user->profile_picture_url = Storage::url($filePath);
+                // dd($vendor->user->profile_picture_url);
             }
 
             $vendor->business_name = $request->business_name;
             $vendor->service_category = $request->service_category;
             $vendor->experience_years = $request->experience_years;
+            // dd($vendor->user->profile_picture_url);
             $vendor->save();
+            $vendor->user->save();
 
             DB::commit();
 

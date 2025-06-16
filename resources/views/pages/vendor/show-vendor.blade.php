@@ -9,8 +9,8 @@
         <div class="card-body pt-4 p-3">
             <div class="row">
                 <div class="col-md-4">
-                    @if($vendor->profile_picture_url)
-                        <img src="{{ $vendor->profile_picture_url }}" alt="profile picture" class="img-fluid rounded">
+                    @if($vendor->user->profile_picture_url)
+                        <img src="{{ $vendor->user->profile_picture_url }}" alt="profile picture" class="img-fluid rounded">
                     @else
                         <img src="/assets/img/default-avatar.png" alt="default profile" class="img-fluid rounded">
                     @endif
@@ -85,6 +85,7 @@
             @else
                 <div class="text-center py-4">
                     <p class="mb-0">No services or menu items added yet.</p>
+                    {{-- <a href="{{ route('services.create', ['vendor' => $vendor->id]) }}" class="btn btn-sm btn-primary mt-3"> --}}
                     <a href="{{ route('services.create', ['vendor' => $vendor->id]) }}" class="btn btn-sm btn-primary mt-3">
                         Add First Menu Item
                     </a>

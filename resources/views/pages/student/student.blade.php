@@ -30,7 +30,7 @@
                             <thead>
                                 <tr>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        ID
+                                        No
                                     </th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
                                         PHOTO
@@ -60,8 +60,8 @@
                                     </td>
                                     <td>
                                         <div>
-                                            @if($student->profile_picture_url)
-                                                <img src="{{ $student->profile_picture_url }}" class="avatar avatar-sm me-3">
+                                            @if($student->user->profile_picture_url)
+                                                <img src="{{ $student->user->profile_picture_url }}" class="avatar avatar-sm me-3">
                                             @else
                                                 <img src="{{ asset('assets/img/default-avatar.png') }}" class="avatar avatar-sm me-3">
                                             @endif

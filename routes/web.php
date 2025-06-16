@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApiController\TransactionController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InfoUserController;
@@ -13,6 +14,8 @@ use App\Models\Application;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\QrCodeController;
 use App\Models\Service;
+use App\Models\Transaction;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
@@ -36,59 +39,53 @@ Route::group(['middleware' => 'auth'], function () {
 		return view('dashboard');
 	})->name('dashboard');
 
-	Route::get('billing', function () {
-		return view('billing');
-	})->name('billing');
-
 	Route::get('profile', function () {
 		return view('profile');
 	})->name('profile');
 
-	Route::get('rtl', function () {
-		return view('rtl');
-	})->name('rtl');
-
-	//Student Routes
+	//Student Routes ---------------------------------------------------------------------------------------------------
 	Route::resource('student', StudentController::class);
 	
-	//Vendor Routes
+	//Vendor Routes ----------------------------------------------------------------------------------------------------
 	Route::resource('vendor', VendorController::class);
 	
-	//Application Routes
+	//Application Routes -----------------------------------------------------------------------------------------------
 	Route::resource('application', ApplicationController::class);
 
-	//QR Code Routes
+	//QR Code Routes ---------------------------------------------------------------------------------------------------
 	Route::resource('qrcode', QrCodeController::class);
 
-	//Service Routes
+	//Service Routes ---------------------------------------------------------------------------------------------------
 	Route::get('services/create/{vendor?}', [ServiceController::class, 'create'])->name('services.create');
+	// Route::get('services/update/{vendor?}', [ServiceController::class, 'update'])->name('services.update');
 	Route::resource('services', ServiceController::class)->except(['create']);
 
-	Route::get('tables', function () {
-		return view('tables');
-	})->name('tables');
+	//Report Routes ---------------------------------------------------------------------------------------------------
+	Route::get('report', function(){
+		return view('pages.report.report-option');
+	});
+	Route::get('report/participation', [TransactionController::class, 'showStudentParticipation']);
+	Route::get('report/financial', function() {
+		$vendors = Vendor::with('user')->get();
+        return view('pages.report.report-vendorlist', compact(['vendors']));
+	});
+	Route::get('report/financial/{vendor}', [TransactionController::class, 'showFinancial']);
+	Route::get('report/anomaly', [TransactionController::class, 'showAnomaly']);
+	Route::get('report/feedback', function() {
+		$vendors = Vendor::with('user')->get();
+        return view('pages.report.report-vendorfeedback', compact(['vendors']));
+	});
+	Route::get('report/feedback/{vendor}', [TransactionController::class, 'showFeedback']);
 
-    Route::get('virtual-reality', function () {
-		return view('virtual-reality');
-	})->name('virtual-reality');
-
-    Route::get('static-sign-in', function () {
-		return view('static-sign-in');
-	})->name('sign-in');
-
-    Route::get('static-sign-up', function () {
-		return view('static-sign-up');
-	})->name('sign-up');
-
-    Route::get('/logout', [SessionsController::class, 'destroy']);
-
-	//User Profiles
+	//User Profiles ---------------------------------------------------------------------------------------------------
 	Route::get('/user-profile', [InfoUserController::class, 'create']);
 	Route::post('/user-profile', [InfoUserController::class, 'store']);
 
     Route::get('/login', function () {
 		return view('dashboard');
 	})->name('sign-up');
+
+	Route::get('/logout', [SessionsController::class, 'destroy']);
 });
 
 
@@ -102,9 +99,17 @@ Route::group(['middleware' => 'guest'], function () {
 	Route::post('/forgot-password', [ResetController::class, 'sendEmail']);
 	Route::get('/reset-password/{token}', [ResetController::class, 'resetPass'])->name('password.reset');
 	Route::post('/reset-password', [ChangePasswordController::class, 'changePassword'])->name('password.update');
-
 });
 
 Route::get('/login', function () {
     return view('session/login-session');
 })->name('login');
+
+Route::get('/test-time', function() {
+    return [
+        'app_timezone' => config('app.timezone'),
+        'db_timezone' => config('database.connections.mysql.timezone'),
+        'php_timezone' => ini_get('date.timezone'),
+        'current_time' => now(),
+    ];
+});

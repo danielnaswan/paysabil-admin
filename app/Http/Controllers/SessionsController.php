@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use BcMath\Number;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,7 +14,7 @@ class SessionsController extends Controller
         return view('session.login-session');
     }
 
-    public function store()
+    public function store() 
     {
         $attributes = request()->validate([
             'email'=>'required|email',
@@ -23,7 +24,8 @@ class SessionsController extends Controller
         if(Auth::attempt($attributes))
         {
             session()->regenerate();
-            return redirect('dashboard')->with(['success'=>'You are logged in.']);
+            return redirect('dashboard');//->with(['success'=>'You are logged in.']);
+            response()->json(['status' => 200, 'message' => 'Thank you!']);
         }
         else{
 

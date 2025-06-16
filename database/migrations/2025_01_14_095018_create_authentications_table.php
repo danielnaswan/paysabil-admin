@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('authentications', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id('id')->primary();
             $table->datetime('token_expiry');
             $table->datetime('last_activity');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

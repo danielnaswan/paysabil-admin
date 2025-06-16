@@ -9,8 +9,8 @@
         <div class="card-body pt-4 p-3">
             <div class="row">
                 <div class="col-md-4">
-                    @if($student->profile_picture_url)
-                        <img src="{{ $student->profile_picture_url }}" alt="profile picture" class="img-fluid rounded">
+                    @if($student->user->profile_picture_url)
+                        <img src="{{ $student->user->profile_picture_url }}" alt="profile picture" class="img-fluid rounded">
                     @else
                         <img src="/assets/img/default-avatar.png" alt="default profile" class="img-fluid rounded">
                     @endif

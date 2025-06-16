@@ -15,14 +15,13 @@ class CreateUsersTable extends Migration
     public function up()
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->id()->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            // $table->bigInteger('phone')->nullable();
             $table->string('phone_number', 15)->nullable();
-            // $table->enum('status', UserRole::values())->default(UserRole::ADMIN->value);
             $table->enum('role', ['ADMIN', 'VENDOR', 'STUDENT']);
+            $table->string('profile_picture_url', 255)->nullable();
             $table->string('location')->nullable();
             $table->string('about_me')->nullable();
             $table->rememberToken();

@@ -47,15 +47,16 @@
                   <a href="/login/forgot-password" class="text-info text-gradient font-weight-bold">here</a>
                 </small>
                   <p class="mb-4 text-sm mx-auto">
-                    Don't have an account?
+                    Are you a <b>vendor</b>?
                     <a href="register" class="text-info text-gradient font-weight-bold">Sign up</a>
+                    with us
                   </p>
                 </div>
               </div>
             </div>
             <div class="col-md-6">
               <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
-                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('../assets/img/curved-images/curved6.jpg')"></div>
+                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('../assets/img/uthm-images/uthm-ptta.jpeg')"></div>
               </div>
             </div>
           </div>

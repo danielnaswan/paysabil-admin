@@ -13,21 +13,24 @@ class ServiceController extends Controller
     public function index()
     {
         $services = Service::with('vendor')->get();
-        return view('pages.service.service', compact('services'));
+        return view('pages.service.create-service', compact('services'));
     }
 
-    public function create(Request $request)
+    public function create($vendor)
     {
-        $vendor_id = $request->input('vendor_id');
-        $vendor = null;
+        $vendorModel = null;
+        $vendors = collect();
         
-        if ($vendor_id) {
-            $vendor = Vendor::findOrFail($vendor_id);
+        if ($vendor) {
+            $vendorModel = Vendor::findOrFail($vendor);
         } else {
             $vendors = Vendor::all();
         }
 
-        return view('pages.service.create-service', compact('vendor', 'vendors'));
+        return view('pages.service.create-service', [
+        'vendor' => $vendorModel,
+        'vendors' => $vendors
+    ]);
     }
 
     public function store(Request $request)
@@ -39,22 +42,21 @@ class ServiceController extends Controller
             'category' => 'required|string|max:50',
             'preparation_time' => 'required|integer|min:1',
             'vendor_id' => 'required|exists:vendors,id',
-            'is_available' => 'boolean'
+            'is_available' => 'boolean|nullable'
         ]);
 
         DB::beginTransaction();
 
         try {
-            $service = new Service();
-            $service->id = Str::uuid();
-            $service->name = $request->name;
-            $service->description = $request->description;
-            $service->price = $request->price;
-            $service->category = $request->category;
-            $service->preparation_time = $request->preparation_time;
-            $service->is_available = $request->has('is_available');
-            $service->vendor_id = $request->vendor_id;
-            $service->save();
+            Service::create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'price' => $request->price,
+                'category' => $request->category,
+                'preparation_time' => $request->preparation_time,
+                'vendor_id' => $request->vendor_id,
+                'is_available' => 1,
+            ]);
 
             DB::commit();
 
@@ -76,7 +78,7 @@ class ServiceController extends Controller
     {
         $service = Service::with('vendor')->findOrFail($id);
         $vendors = Vendor::all();
-        return view('pages.service.edit', compact('service', 'vendors'));
+        return view('pages.service.edit-service', compact('service', 'vendors'));
     }
 
     public function update(Request $request, string $id)

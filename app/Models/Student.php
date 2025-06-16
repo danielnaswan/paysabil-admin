@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends Model
 {
@@ -12,7 +13,6 @@ class Student extends Model
         'id',
         'full_name',
         'matrix_no',
-        'profile_picture_url',
         'user_id'
     ];
 
@@ -24,4 +24,16 @@ class Student extends Model
     {
         return $this->belongsTo(User::class);
     }
-}
+
+    public function application() : HasOne {
+        return $this->hasOne(Application::class);
+    }
+
+    public function transaction() : HasOne {
+        return $this->hasOne(Transaction::class);
+    }
+
+    public function ratings()  {
+        return $this->hasMany(Rating::class);
+    }
+ }

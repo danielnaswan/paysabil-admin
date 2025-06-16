@@ -7,7 +7,7 @@
             <h6 class="mb-0">Edit Menu Item</h6>
         </div>
         <div class="card-body pt-4 p-3">
-            <form action="{{ route('service.update', $service->id) }}" method="POST" role="form text-left">
+            <form action="{{ route('services.update', $service->id) }}" method="POST" role="form text-left">
                 @csrf
                 @method('PUT')
                 @if($errors->any())

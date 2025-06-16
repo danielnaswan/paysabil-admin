@@ -5,7 +5,7 @@
                 <div class="copyright text-center text-sm text-muted text-lg-start">
                     © <script>
                         document.write(new Date().getFullYear())
-                    </script>, made<i class="fa fa-heart"></i> by
+                    </script>, made by
                     <a href="https://www.linkedin.com/in/danielnaswan/" class="font-weight-bold" target="_blank">danielnaswan</a> &amp; <a style="color: #252f40;" href="https://hep.uthm.edu.my/ms/" class="font-weight-bold ml-1" target="_blank">HEPAUTHM</a>
                     <em>from student to <b>students</b></em>
                 </div>

@@ -4,11 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Service extends Model
 {
-    use SoftDeletes, HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -33,6 +32,6 @@ class Service extends Model
 
     public function qrCodes()
     {
-        return $this->hasMany(QrCode::class);
+        return $this->hasOne(QrCode::class);
     }
 }

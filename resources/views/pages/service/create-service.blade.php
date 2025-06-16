@@ -26,7 +26,7 @@
                             <div class="form-group">
                                 <label for="vendor-select" class="form-control-label">Select Vendor</label>
                                 <select class="form-control" id="vendor-select" name="vendor_id" required>
-                                    <option value="">Choose a vendor...</option>
+                                    <option value="">Choose a vendor</option>
                                     @foreach($vendors as $vendor)
                                         <option value="{{ $vendor->id }}">{{ $vendor->business_name }}</option>
                                     @endforeach

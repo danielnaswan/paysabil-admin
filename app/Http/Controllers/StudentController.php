@@ -39,21 +39,13 @@ class StudentController extends Controller
             'matrix_no' => 'required|string|max:20|unique:students',
             'email' => 'required|string|email|max:255|unique:users',
             'phone_number' => 'required|string|max:15',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:5|confirmed',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         DB::beginTransaction();
 
         try {
-            $user = User::create([
-                'name' => $request->full_name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'phone_number' => $request->phone_number,
-                'role' => 'STUDENT'
-            ]);
-
             $profilePictureUrl = null;
             if ($request->hasFile('profile_picture')) {
                 $file = $request->file('profile_picture');
@@ -62,13 +54,20 @@ class StudentController extends Controller
                 $profilePictureUrl = Storage::url($filePath);
             }
 
-            $student = new Student();
-            $student->id = Str::uuid();
-            $student->full_name = $request->full_name;
-            $student->matrix_no = $request->matrix_no;
-            $student->profile_picture_url = $profilePictureUrl;
-            $student->user_id = $user->id;
-            $student->save();
+            $user = User::create([
+                'name' => $request->full_name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone_number' => $request->phone_number,
+                'profile_picture_url' => $profilePictureUrl,
+                'role' => 'STUDENT'
+            ]);
+
+            $student = Student::create([
+                'full_name' => $request->full_name,
+                'matrix_no' => $request->matrix_no,
+                'user_id' => $user->id
+            ]);
 
             DB::commit();
 
@@ -123,19 +122,20 @@ class StudentController extends Controller
 
             if ($request->hasFile('profile_picture')) {
                 // Delete old profile picture if it exists
-                if ($student->profile_picture_url) {
-                    Storage::delete(str_replace('/storage', 'public', $student->profile_picture_url));
+                if ($student->user->profile_picture_url) {
+                    Storage::delete(str_replace('/storage', 'public', $student->user->profile_picture_url));
                 }
 
                 $file = $request->file('profile_picture');
                 $fileName = time() . '_' . $file->getClientOriginalName();
                 $filePath = $file->storeAs('public/profile_pictures', $fileName);
-                $student->profile_picture_url = Storage::url($filePath);
+                $student->user->profile_picture_url = Storage::url($filePath);
             }
 
             $student->full_name = $request->full_name;
             $student->matrix_no = $request->matrix_no;
             $student->save();
+            $student->user->save();
 
             DB::commit();
 
@@ -146,7 +146,7 @@ class StudentController extends Controller
         }
     }
 
-    /**
+    /*
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
@@ -154,15 +154,12 @@ class StudentController extends Controller
         try {
             $student = Student::findOrFail($id);
             
-            // Delete profile picture if it exists
             if ($student->profile_picture_url) {
                 Storage::delete(str_replace('/storage', 'public', $student->profile_picture_url));
             }
 
-            // Delete associated user
             $student->user()->delete();
             
-            // Delete student
             $student->delete();
 
             return redirect()->route('student.index')->with('success', 'Student deleted successfully!');

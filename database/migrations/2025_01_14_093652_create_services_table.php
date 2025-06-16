@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('services', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id('id');
             $table->string('name', 100);
             $table->text('description');
-            $table->decimal('price', 10, 2);
+            $table->decimal('price', 10, places: 2);
             $table->string('category', 50);
             $table->integer('preparation_time');
             $table->boolean('is_available')->default(true);
-            $table->foreignUuid('vendor_id')->constrained('vendors')->onDelete('cascade');
+            $table->foreignId('vendor_id')->constrained('vendors')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

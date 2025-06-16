@@ -38,7 +38,6 @@ class ApplicationController extends Controller
             $filePath = $file->storeAs('public/applications', $fileName);
 
             Application::create([
-                'id'                => Str::uuid(),
                 'title'             => $request->title,
                 'description'       => $request->description,
                 'submission_date'   => now(),
@@ -77,7 +76,7 @@ class ApplicationController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:PENDING,APPROVED,REJECTED',
-            'admin_remarks' => 'required|string',
+            'admin_remarks' => 'string',
             'document' => 'nullable|mimes:pdf|max:10240'
         ]);
 
@@ -117,12 +116,13 @@ class ApplicationController extends Controller
     {
         try {
             $application = Application::findOrFail($id);
+            // dd($application->document_url);
             
             if ($application->document_url) {
                 Storage::delete(str_replace('/storage', 'public', $application->document_url));
             }
             
-            $application->delete();
+            $application->forceDelete();
 
             return redirect()->route('application.index')
                            ->with('success', 'Application deleted successfully!');

@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('transactions', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->datetime('transaction_date');
+            $table->id('id')->primary();
+            $table->timestamp('transaction_date');
             $table->enum('status', ['PENDING', 'COMPLETED', 'FAILED', 'CANCELLED']);
             $table->decimal('amount', 10, 2);
             $table->text('meal_details');
-            $table->foreignUuid('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignUuid('vendor_id')->constrained('vendors')->onDelete('cascade');
-            $table->foreignUuid('qr_code_id')->constrained('qr_codes')->onDelete('cascade');
+            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->foreignId('vendor_id')->constrained('vendors')->onDelete('cascade');
+            $table->foreignId('qr_code_id')->constrained('qr_codes')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

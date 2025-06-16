@@ -1,17 +1,6 @@
 @extends('layouts.user_type.auth')
 
 @section('content')
-<div>
-    @if(session('success'))
-        <div class="m-3 alert alert-success alert-dismissible fade show" id="alert-success" role="alert">
-            <span class="alert-text text-white">
-            {{ session('success') }}</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
-                <i class="fa fa-close" aria-hidden="true"></i>
-            </button>
-        </div>
-    @endif
-
     <div class="row">
         <div class="col-12">
             <div class="card mb-4 mx-4">
@@ -20,7 +9,6 @@
                         <div>
                             <h5 class="mb-0">All Vendors</h5>
                         </div>
-                        <a href="{{ route('vendor.create') }}" class="btn bg-gradient-primary btn-sm mb-0" type="button">+ New Vendor</a>
                     </div>
                 </div>
                 <div class="card-body px-0 pt-0 pb-2">
@@ -66,19 +54,9 @@
                                     </td>
                                     <td class="align-middle">
                                         <div class="ms-auto">
-                                            <a class="btn btn-link text-dark px-3 mb-0" href="{{ route('vendor.show', $vendor->id) }}">
+                                            <a class="btn btn-link text-dark px-3 mb-0" href="{{ url('/report/financial', $vendor->id) }}">
                                                 <i class="fas fa-eye text-dark me-2"></i>View
                                             </a>
-                                            <a class="btn btn-link text-dark px-3 mb-0" href="{{ route('vendor.edit', $vendor->id) }}">
-                                                <i class="fas fa-pencil-alt text-dark me-2"></i>Edit
-                                            </a>
-                                            <form action="{{ route('vendor.destroy', $vendor->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-link text-danger text-gradient px-3 mb-0" onclick="return confirm('Are you sure you want to delete this vendor?')">
-                                                    <i class="far fa-trash-alt me-2"></i>Delete
-                                                </button>
-                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -90,5 +68,5 @@
             </div>
         </div>
     </div>
-</div>
 @endsection
+

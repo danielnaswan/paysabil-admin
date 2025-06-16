@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class QrCode extends Model
 {
-    use SoftDeletes, HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'code',

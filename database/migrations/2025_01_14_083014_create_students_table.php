@@ -12,10 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('students', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('full_name', 100);
+            $table->id('id')->primary();
             $table->string('matrix_no', 20)->unique();
-            $table->string('profile_picture_url', 255)->nullable();
+            $table->string('full_name', 100);
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Changed to foreignId() to match template's user id type
             $table->timestamps();
             $table->softDeletes();
