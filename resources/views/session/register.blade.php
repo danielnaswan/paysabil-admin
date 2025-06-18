@@ -24,51 +24,55 @@
                             <form role="form text-left" method="POST" action="/register">
                                 @csrf
                                 <div class="mb-3">
-                                    <input type="text" class="form-control" placeholder="Name" name="name"
-                                        id="name" aria-label="Name" aria-describedby="name"
-                                        value="{{ old('name') }}">
-                                    @error('name')
-                                        <p class="text-danger text-xs mt-2">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                <div class="mb-3"> 
-                                    <input type="text" class="form-control" placeholder="Id" name="id"
-                                        id="id" aria-label="Id" aria-describedby="id"
-                                        value="{{ old('id') }}">
-                                    @error('id')
+                                    <input type="text" class="form-control" placeholder="Name" name="business_name"
+                                        id="business_name" aria-label="Business Name" aria-describedby="name"
+                                        value="{{ old('business_name') }}" required>
+                                    @error('business_name')
                                         <p class="text-danger text-xs mt-2">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div class="mb-3">
                                     <input type="email" class="form-control" placeholder="Email" name="email"
                                         id="email" aria-label="Email" aria-describedby="email-addon"
-                                        value="{{ old('email') }}">
+                                        value="{{ old('email') }}" required>
                                     @error('email')
                                         <p class="text-danger text-xs mt-2">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div class="mb-3">
+                                    <input type="text" class="form-control" name="service_category"
+                                        id="service_category" aria-label="Service Category" aria-describedby="service-cat"
+                                        value="Makanan" readonly>
+                                    @error('service_category')
+                                        <p class="text-danger text-xs mt-2">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div class="mb-3">
                                     <input class="form-control" type="tel" value="{{old('phone_number')}}"
-                                     id="phone_number" name="phone_number" placeholder="Phone number">
+                                     id="phone_number" name="phone_number" placeholder="Phone number" required>
                                      @error('phone_number')
                                         <p class="text-danger text-xs mt-2">{{ $message }}</p>
                                      @enderror
                                 </div>
                                 <div class="mb-3">
-                                    <select name="role" id="role" class="form-control">
-                                        <option value="" disabled selected>Role</option>
-                                        <option value="VENDOR" {{ old('role') == App\Enums\UserRole::VENDOR->value ? 'selected' : '' }}>Vendor</option>
-                                        <option value="STUDENT" {{ old('role') == App\Enums\UserRole::STUDENT->value ? 'selected' : '' }}>Student</option>
-                                        {{-- <option value="VENDOR" {{ old('role') ==  'VENDOR' ? 'selected' : '' }}>Vendor</option>
-                                        <option value="STUDENT" {{ old('role') == 'STUDENT' ? 'selected' : '' }}>Student</option> --}}
-                                    </select>
+                                    
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                                    @error('profile_picture')
+                                        <p class="text-danger text-xs mt-2">{{ $message }}</p>
+                                    @enderror
                                 </div>
                                 <div class="mb-3">
                                     <input type="password" class="form-control" placeholder="Password" name="password"
-                                        id="password" aria-label="Password" aria-describedby="password-addon">
+                                        id="password" aria-label="Password" aria-describedby="password-addon" required>
                                     @error('password')
                                         <p class="text-danger text-xs mt-2">{{ $message }}</p>
                                     @enderror
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="password" id="password_confirmation"
+                                    placeholder="Password Confirmation" name="password_confirmation" required>
                                 </div>
                                 <div class="form-check form-check-info text-left">
                                     <input class="form-check-input" type="checkbox" name="agreement"

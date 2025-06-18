@@ -68,7 +68,6 @@ class VendorController extends Controller
             $vendor->business_name = $request->business_name;
             $vendor->service_category = $request->service_category;
             $vendor->experience_years = $request->experience_years;
-            // $vendor->profile_picture_url = $profilePictureUrl;
             $vendor->user_id = $user->id;
             $vendor->save();
 

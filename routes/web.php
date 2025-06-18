@@ -37,7 +37,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/', [HomeController::class, 'home']);
 	Route::get('dashboard', function () {
 		return view('dashboard');
-	})->name('dashboard');
+	})->name('dashboard')->middleware('admin');
 
 	Route::get('profile', function () {
 		return view('profile');
