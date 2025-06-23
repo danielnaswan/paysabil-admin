@@ -101,7 +101,7 @@ class ServiceController extends Controller
             ]);
 
             // Log service creation
-            $this->logServiceActivity($service, 'created');
+            // $this->logServiceActivity($service, 'created');
 
             DB::commit();
 
@@ -199,10 +199,10 @@ class ServiceController extends Controller
             ]);
 
             // Log service update
-            $this->logServiceActivity($service, 'updated', [
-                'old_data' => $oldData,
-                'changes' => $service->getChanges()
-            ]);
+            // $this->logServiceActivity($service, 'updated', [
+            //     'old_data' => $oldData,
+            //     'changes' => $service->getChanges()
+            // ]);
 
             DB::commit();
 
@@ -242,7 +242,7 @@ class ServiceController extends Controller
             $vendorId = $service->vendor_id;
 
             // Log service deletion
-            $this->logServiceActivity($service, 'deleted');
+            // $this->logServiceActivity($service, 'deleted');
 
             // Soft delete the service
             $service->delete();
@@ -275,10 +275,10 @@ class ServiceController extends Controller
             $service->toggleAvailability();
 
             // Log availability change
-            $this->logServiceActivity($service, 'availability_toggled', [
-                'old_availability' => $oldStatus,
-                'new_availability' => $service->is_available
-            ]);
+            // $this->logServiceActivity($service, 'availability_toggled', [
+            //     'old_availability' => $oldStatus,
+            //     'new_availability' => $service->is_available
+            // ]);
 
             $status = $service->is_available ? 'available' : 'unavailable';
 
@@ -317,9 +317,9 @@ class ServiceController extends Controller
             foreach ($services as $service) {
                 if ($service->is_available !== $validated['availability']) {
                     $service->update(['is_available' => $validated['availability']]);
-                    $this->logServiceActivity($service, 'bulk_availability_update', [
-                        'new_availability' => $validated['availability']
-                    ]);
+                    // $this->logServiceActivity($service, 'bulk_availability_update', [
+                    //     'new_availability' => $validated['availability']
+                    // ]);
                     $updatedCount++;
                 }
             }
@@ -420,7 +420,7 @@ class ServiceController extends Controller
     {
         // Check for completed transactions
         $hasTransactions = $service->transactions()
-            ->where('status', 'COMPLETED')
+            ->where('transactions.status', 'COMPLETED')
             ->exists();
 
         // Check for active QR codes
