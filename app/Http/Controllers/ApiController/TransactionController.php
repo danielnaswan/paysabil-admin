@@ -170,14 +170,15 @@ class TransactionController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255|min:5',
-                'description' => 'nullable|string|max:1000',  // Changed to nullable
+                'description' => 'nullable|string|max:1000',
                 'document' => [
                     'nullable',
                     'file',
                     'mimes:' . implode(',', self::ALLOWED_MIMES),
                     'max:' . self::MAX_FILE_SIZE
                 ],
-                'document_name' => 'nullable|string|max:255'  // Changed to nullable
+                'document_name' => 'nullable|string|max:255',
+                'document_size' => 'nullable|integer|min:0'  // Add validation for document_size
             ]);
 
             if ($validator->fails()) {
@@ -210,21 +211,24 @@ class TransactionController extends Controller
             // Handle file upload
             $documentUrl = null;
             $documentName = null;
+            $documentSize = 0;
 
             if ($request->hasFile('document')) {
                 $file = $request->file('document');
                 $documentUrl = $file->store('applications', 'public');
                 $documentName = $request->input('document_name') ?: $file->getClientOriginalName();
+                $documentSize = $request->input('document_size') ?: $file->getSize();
             }
 
             $application = Application::create([
                 'title' => $request->title,
-                'description' => $request->description ?: null,  // Store null if empty
+                'description' => $request->description ?: null,
                 'student_id' => $student->id,
                 'status' => 'PENDING',
                 'submission_date' => now(),
                 'document_url' => $documentUrl,
-                'document_name' => $documentName
+                'document_name' => $documentName,
+                'document_size' => $documentSize  // Add document_size field
             ]);
 
             DB::commit();
@@ -236,7 +240,8 @@ class TransactionController extends Controller
                     'title' => $application->title,
                     'status' => $application->status,
                     'submission_date' => $application->submission_date->format('Y-m-d H:i:s'),
-                    'document_name' => $application->document_name
+                    'document_name' => $application->document_name,
+                    'document_size' => $application->document_size
                 ]
             ], 201);
         } catch (\Exception $e) {
