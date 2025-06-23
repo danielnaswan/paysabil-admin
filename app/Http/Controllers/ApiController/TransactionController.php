@@ -170,13 +170,14 @@ class TransactionController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255|min:5',
-                'description' => 'nullable|string|max:1000',
+                'description' => 'required|string|max:1000',
                 'document' => [
                     'nullable',
                     'file',
                     'mimes:' . implode(',', self::ALLOWED_MIMES),
                     'max:' . self::MAX_FILE_SIZE
-                ]
+                ],
+                'document_name' => 'required|string|max:255'
             ]);
 
             if ($validator->fails()) {
@@ -208,8 +209,12 @@ class TransactionController extends Controller
 
 
             $documentUrl = null;
+            $documentName = null;
+
             if ($request->hasFile('document')) {
-                $documentUrl = $request->file('document')->store('applications', 'public');
+                $file = $request->file('document');
+                $documentUrl = $file->store('applications', 'public');
+                $documentName = $request->input('document_name', $file->getClientOriginalName());
             }
 
             $application = Application::create([
@@ -218,7 +223,8 @@ class TransactionController extends Controller
                 'student_id' => $student->id,
                 'status' => 'PENDING',
                 'submission_date' => now(),
-                'document_url' => $documentUrl  // Now saves the file path
+                'document_url' => $documentUrl,  // Now saves the file path
+                'document_name' => $documentName
             ]);
 
             DB::commit();
