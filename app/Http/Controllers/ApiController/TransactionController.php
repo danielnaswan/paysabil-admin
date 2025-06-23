@@ -20,7 +20,21 @@ use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
+    /**
+     * Maximum file size in kilobytes (10MB)
+     */
+    private const MAX_FILE_SIZE = 10240;
+    /**
+     * Allowed file types for documents
+     */
+    private const ALLOWED_MIMES = ['pdf'];
+    /**
+     * Dailty max limit for as student
+     */
     private const DAILY_TRANSACTION_LIMIT = 1;
+    /**
+     * Dailty max limit for as student
+     */
     private const MAX_RATING = 5;
 
     /**
@@ -155,7 +169,14 @@ class TransactionController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'documents' => 'sometimes|string|max:500'
+                'title' => 'required|string|max:255|min:5',
+                'description' => 'nullable|string|max:1000',
+                'document' => [
+                    'nullable',
+                    'file',
+                    'mimes:' . implode(',', self::ALLOWED_MIMES),
+                    'max:' . self::MAX_FILE_SIZE
+                ]
             ]);
 
             if ($validator->fails()) {
@@ -185,11 +206,17 @@ class TransactionController extends Controller
 
             DB::beginTransaction();
 
+
+            $documentUrl = null;
+            if ($request->hasFile('document')) {
+                $documentUrl = $request->file('document')->store('applications', 'public');
+            }
+
             $application = Application::create([
                 'student_id' => $student->id,
                 'status' => 'PENDING',
                 'submission_date' => now(),
-                'document_url' => $request->documents ?? null
+                'document_url' => $documentUrl  // Now saves the file path
             ]);
 
             DB::commit();
