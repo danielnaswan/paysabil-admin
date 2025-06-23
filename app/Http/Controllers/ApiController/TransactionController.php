@@ -49,7 +49,7 @@ class TransactionController extends Controller
 
             // Create user account
             $user = User::create([
-                'username' => $request->matrix_no,
+                'name' => $request->full_name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'phone_number' => $request->phone_number,
