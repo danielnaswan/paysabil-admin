@@ -170,14 +170,14 @@ class TransactionController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255|min:5',
-                'description' => 'required|string|max:1000',
+                'description' => 'nullable|string|max:1000',  // Changed to nullable
                 'document' => [
                     'nullable',
                     'file',
                     'mimes:' . implode(',', self::ALLOWED_MIMES),
                     'max:' . self::MAX_FILE_SIZE
                 ],
-                'document_name' => 'required|string|max:255'
+                'document_name' => 'nullable|string|max:255'  // Changed to nullable
             ]);
 
             if ($validator->fails()) {
@@ -207,23 +207,23 @@ class TransactionController extends Controller
 
             DB::beginTransaction();
 
-
+            // Handle file upload
             $documentUrl = null;
             $documentName = null;
 
             if ($request->hasFile('document')) {
                 $file = $request->file('document');
                 $documentUrl = $file->store('applications', 'public');
-                $documentName = $request->input('document_name', $file->getClientOriginalName());
+                $documentName = $request->input('document_name') ?: $file->getClientOriginalName();
             }
 
             $application = Application::create([
                 'title' => $request->title,
-                'description' => $request->description,
+                'description' => $request->description ?: null,  // Store null if empty
                 'student_id' => $student->id,
                 'status' => 'PENDING',
                 'submission_date' => now(),
-                'document_url' => $documentUrl,  // Now saves the file path
+                'document_url' => $documentUrl,
                 'document_name' => $documentName
             ]);
 
@@ -233,8 +233,10 @@ class TransactionController extends Controller
                 'message' => 'Application submitted successfully',
                 'application' => [
                     'id' => $application->id,
+                    'title' => $application->title,
                     'status' => $application->status,
-                    'submission_date' => $application->submission_date->format('Y-m-d H:i:s')
+                    'submission_date' => $application->submission_date->format('Y-m-d H:i:s'),
+                    'document_name' => $application->document_name
                 ]
             ], 201);
         } catch (\Exception $e) {
