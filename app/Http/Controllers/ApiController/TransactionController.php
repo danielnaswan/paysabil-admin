@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\ApiController;
 
+use App\Enums\UserRole;
 use App\Models\Student;
 use App\Models\Vendor;
 use App\Models\QrCode;
@@ -114,7 +115,7 @@ class TransactionController extends Controller
             }
 
             // Check if user is a student
-            if ($student->user->role !== 'STUDENT') {
+            if ($student->user->role !== UserRole::STUDENT) {
                 return response()->json([
                     'message' => 'Access denied. Only students can use this app.',
                     'error' => true
