@@ -213,6 +213,8 @@ class TransactionController extends Controller
             }
 
             $application = Application::create([
+                'title' => $request->title,
+                'description' => $request->description,
                 'student_id' => $student->id,
                 'status' => 'PENDING',
                 'submission_date' => now(),
