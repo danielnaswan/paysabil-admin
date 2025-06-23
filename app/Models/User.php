@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -49,16 +51,19 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'role' => UserRole::class,
     ];
-    
-    public function student() : HasOne {
+
+    public function student(): HasOne
+    {
         return $this->hasOne(Student::class);
     }
-    
-    public function admin() : HasOne {
+
+    public function admin(): HasOne
+    {
         return $this->hasOne(Admin::class);
     }
-    
-    public function vendor() : HasOne {
+
+    public function vendor(): HasOne
+    {
         return $this->hasOne(Vendor::class);
     }
 }

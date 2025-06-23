@@ -1,182 +1,578 @@
 <?php
 
-namespace App\Http\Controllers\ApiController;
+namespace App\Http\Controllers\Api;
 
-use App\Enums\TransactionStatus;
 use App\Models\Student;
 use App\Models\Vendor;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Models\QrCode;
 use App\Models\Rating;
 use App\Models\Transaction;
-use Illuminate\Database\Events\TransactionRolledBack;
+use App\Models\Application;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class TransactionController extends Controller
 {
-    /**p
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
+    private const DAILY_TRANSACTION_LIMIT = 1;
+    private const MAX_RATING = 5;
 
     /**
-     * Store a newly created resource in storage.
+     * Student Registration
      */
-    public function store(Request $request)
+    public function register(Request $request)
     {
-        $qrCode = $request->all();
-
-        DB::beginTransaction();
-
         try {
-            $matchQRCode = QRCode::where('code', $qrCode)->firstOrFail();
+            $validator = Validator::make($request->all(), [
+                'full_name' => 'required|string|max:255',
+                'matrix_no' => 'required|string|unique:students,matrix_no',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6',
+                'phone_number' => 'required|string|max:20'
+            ]);
 
-            $matchStudent = Student::where('matrix_no', $qrCode['matrix_no'])->firstOrFail();
-
-            $isTransExist = Transaction::where('student_id', $matchStudent['id'])
-                ->whereDate('created_at', today())
-                ->exists();
-
-            if (!$isTransExist) {
-                $transactionData = Transaction::create([
-                    'student_id' => $matchStudent['id'],
-                    'vendor_id' => $matchQRCode['vendor_id'],
-                    'qr_code_id' => $matchQRCode['id'],
-                    'status' => TransactionStatus::COMPLETED->value,
-                    'transaction_date' => now(),
-                    'amount' => $matchQRCode['service_details']['price'],
-                    'meal_details' => $matchQRCode['service_details']['service_name'],
-                ]);
-            } else {
+            if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Transaction existed today'
-                ], 401);
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                    'error' => true
+                ], 422);
             }
 
+            DB::beginTransaction();
+
+            // Create user account
+            $user = User::create([
+                'username' => $request->matrix_no,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone_number' => $request->phone_number,
+                'role' => 'STUDENT'
+            ]);
+
+            // Create student profile
+            $student = Student::create([
+                'full_name' => $request->full_name,
+                'matrix_no' => $request->matrix_no,
+                'user_id' => $user->id
+            ]);
+
             DB::commit();
-        } catch (\Throwable $th) {
-            //throw $th;
-            DB::rollBack();
+
             return response()->json([
-                'message' => 'Transaction failed: ' . $th->getMessage(),
+                'message' => 'Student registered successfully',
+                'student' => [
+                    'id' => $student->id,
+                    'full_name' => $student->full_name,
+                    'matrix_no' => $student->matrix_no,
+                    'email' => $user->email
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Student registration failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Registration failed: ' . $e->getMessage(),
                 'error' => true
             ], 500);
         }
-
-        return response()->json([
-            'transaction' => $transactionData,
-            'data' => $matchQRCode  
-        ], 200);
-    }
-
-    public function storeFeedback(Request $request) {
-        //create api endpoint here to fetch data from flutter
-        $request->validate([
-            'student_id' => ['required'],
-            'vendor_id' => ['required'],
-            'stars' => ['required'],
-            'review_comment' => ['required', 'max:150', 'string'],
-        ]);
-
-        $feedback = Rating::create([
-            'stars' => $request->stars,
-            'review_comment' => $request->review_comment,
-            'student_id' => $request->student_id,
-            'vendor_id' => $request->vendor_id,
-            'review_date' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'feedback submitted!',
-            'feedback' => $feedback,
-            'student' => $feedback->student,
-        ],200);
     }
 
     /**
-     * Display the specified resource.
+     * Student Login
      */
-    public function showStudentParticipation()
+    public function login(Request $request)
     {
-        $studentIds = Transaction::select('student_id')
-            ->whereNotIn('student_id', function($query) {
-                $query->select('student_id')
-                      ->from('transactions')
-                      ->where('transaction_date', '>=', now()->subDays(5))
-                      ->where('transaction_date', '<', now())
-                      ->whereNull('deleted_at');
-            })
-            ->whereNull('deleted_at')
-            ->distinct()
-            ->get()
-            ->toArray();
+        try {
+            $validator = Validator::make($request->all(), [
+                'matrix_no' => 'required|string',
+                'password' => 'required|string'
+            ]);
 
-        //create a collection of student's data
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                    'error' => true
+                ], 422);
+            }
 
-        $nonActiveStudents = Student::whereIn('id', $studentIds)->get();
+            // Find student by matrix number
+            $student = Student::with('user')->where('matrix_no', $request->matrix_no)->first();
 
-        return view('pages.report.report-participation', ['students' => $nonActiveStudents]);
-    }
-    public function showFinancial(string $vendor, Request $request)//the month picker is not doing well ...
-    {
-        $month = $request->input('month');
+            if (!$student || !Hash::check($request->password, $student->user->password)) {
+                return response()->json([
+                    'message' => 'Invalid credentials',
+                    'error' => true
+                ], 401);
+            }
 
-        $vendorModel = Vendor::findOrFail($vendor);
+            // Check if user is a student
+            if ($student->user->role !== 'STUDENT') {
+                return response()->json([
+                    'message' => 'Access denied. Only students can use this app.',
+                    'error' => true
+                ], 403);
+            }
 
-        $query = Transaction::with(['student', 'qrCode', 'vendor'])
-                    ->where('vendor_id', $vendor)
-                    ->orderBy('transaction_date', 'desc');
+            // Create token
+            $token = $student->user->createToken('mobile-app')->plainTextToken;
 
-        if ($month) {
-            $query->whereYear('transaction_date', '=', date('Y', strtotime($month)))
-                  ->whereMonth('transaction_date', '=', date('m', strtotime($month)));
+            return response()->json([
+                'message' => 'Login successful',
+                'token' => $token,
+                'user' => [
+                    'id' => $student->user->id,
+                    'student_id' => $student->id,
+                    'full_name' => $student->full_name,
+                    'matrix_no' => $student->matrix_no,
+                    'email' => $student->user->email,
+                    'application_status' => $student->application_status,
+                    'is_eligible' => $student->is_eligible
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Login failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Login failed: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
         }
-
-        $transactionData = $query->get();
-
-        return view('pages.report.report-vendortransaction', compact('transactionData', 'vendorModel'));
     }
-    public function showFeedback(Request $request, string $vendor) {
-        //using rating model..
-        $vendorModel = Vendor::findOrFail($vendor);
 
-
-        $feedbacks = Rating::with(['student', 'vendor'])
-        ->select('*')
-        ->where('vendor_id', $vendor)
-        ->get(); //select * from ratings where vendor_id = $vendor
-
-        return view('pages.report.report-feedback', compact('feedbacks', 'vendorModel'));
-    }
-    public function showAnomaly()
+    /**
+     * Submit Application (One-time only)
+     */
+    public function submitApplication(Request $request)
     {
-        $anomalies = Transaction::with(['student', 'vendor'])
-                ->select('student_id', 'transaction_date', DB::raw('COUNT(*) as transaction_count'))
-                ->groupBy('student_id', 'transaction_date')
-                ->having('transaction_count', '>', 1)
+        try {
+            $validator = Validator::make($request->all(), [
+                'documents' => 'sometimes|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                    'error' => true
+                ], 422);
+            }
+
+            $student = $request->user()->student;
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Student profile not found',
+                    'error' => true
+                ], 404);
+            }
+
+            // Check if application already exists
+            if ($student->application) {
+                return response()->json([
+                    'message' => 'Application already submitted. You can only apply once.',
+                    'application_status' => $student->application->status,
+                    'error' => true
+                ], 409);
+            }
+
+            DB::beginTransaction();
+
+            $application = Application::create([
+                'student_id' => $student->id,
+                'status' => 'PENDING',
+                'submission_date' => now(),
+                'document_url' => $request->documents ?? null
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Application submitted successfully',
+                'application' => [
+                    'id' => $application->id,
+                    'status' => $application->status,
+                    'submission_date' => $application->submission_date->format('Y-m-d H:i:s')
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Application submission failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Application submission failed: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Application Status
+     */
+    public function getApplicationStatus(Request $request)
+    {
+        try {
+            $student = $request->user()->student;
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Student profile not found',
+                    'error' => true
+                ], 404);
+            }
+
+            $application = $student->application;
+
+            if (!$application) {
+                return response()->json([
+                    'message' => 'No application found',
+                    'has_application' => false,
+                    'can_apply' => true
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Application status retrieved',
+                'has_application' => true,
+                'can_apply' => false,
+                'application' => [
+                    'id' => $application->id,
+                    'status' => $application->status,
+                    'submission_date' => $application->submission_date->format('Y-m-d H:i:s'),
+                    'feedback' => $application->feedback ?? null
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get application status: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to get application status',
+                'error' => true
+            ], 500);
+        }
+    }
+
+    /**
+     * Process QR Code Transaction
+     */
+    public function processTransaction(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'qr_code' => 'required|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'QR code is required',
+                    'error' => true
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            $student = $request->user()->student;
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Student profile not found',
+                    'error' => true
+                ], 404);
+            }
+
+            // Check if student has approved application
+            if (!$student->is_eligible) {
+                return response()->json([
+                    'message' => 'You are not eligible for meal claims. Please submit your application and wait for approval.',
+                    'error' => true
+                ], 403);
+            }
+
+            // Find and validate QR code
+            $qrCode = QrCode::with(['vendor', 'service'])
+                ->where('code', $request->qr_code)
+                ->first();
+
+            if (!$qrCode) {
+                return response()->json([
+                    'message' => 'Invalid QR code',
+                    'error' => true
+                ], 404);
+            }
+
+            // Check QR code status
+            if ($qrCode->status !== 'ACTIVE') {
+                return response()->json([
+                    'message' => 'QR code is not active or has been used',
+                    'error' => true
+                ], 400);
+            }
+
+            // Check QR code expiry
+            if ($qrCode->expiry_date && $qrCode->expiry_date < now()) {
+                $qrCode->update(['status' => 'EXPIRED']);
+                return response()->json([
+                    'message' => 'QR code has expired',
+                    'error' => true
+                ], 400);
+            }
+
+            // Check daily transaction limit
+            $todayTransactions = Transaction::where('student_id', $student->id)
+                ->whereDate('transaction_date', today())
+                ->where('status', 'COMPLETED')
+                ->count();
+
+            if ($todayTransactions >= self::DAILY_TRANSACTION_LIMIT) {
+                return response()->json([
+                    'message' => 'Daily transaction limit reached. You can only claim one meal per day.',
+                    'error' => true
+                ], 409);
+            }
+
+            // Create transaction
+            $transaction = Transaction::create([
+                'student_id' => $student->id,
+                'vendor_id' => $qrCode->vendor_id,
+                'qr_code_id' => $qrCode->id,
+                'status' => 'COMPLETED',
+                'transaction_date' => now(),
+                'amount' => $qrCode->service_details['price'] ?? 0,
+                'meal_details' => $qrCode->service_details['service_name'] ?? 'Meal Claim'
+            ]);
+
+            // Update QR code status
+            $qrCode->update(['status' => 'USED']);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Transaction completed successfully',
+                'transaction' => [
+                    'id' => $transaction->id,
+                    'vendor_name' => $qrCode->vendor->business_name,
+                    'service_name' => $qrCode->service_details['service_name'] ?? 'Meal Claim',
+                    'amount' => $transaction->amount,
+                    'date' => $transaction->transaction_date->format('Y-m-d H:i:s'),
+                    'status' => $transaction->status
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Transaction failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Transaction failed: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Transaction History
+     */
+    public function getTransactionHistory(Request $request)
+    {
+        try {
+            $student = $request->user()->student;
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Student profile not found',
+                    'error' => true
+                ], 404);
+            }
+
+            $transactions = Transaction::with(['vendor', 'qrCode.service'])
+                ->where('student_id', $student->id)
                 ->orderBy('transaction_date', 'desc')
-                ->get();
+                ->paginate(20);
 
-        return view('pages.report.report-anomaly', compact( 'anomalies'));
+            $formattedTransactions = $transactions->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'vendor_name' => $transaction->vendor->business_name,
+                    'meal_details' => $transaction->meal_details,
+                    'amount' => $transaction->amount,
+                    'status' => $transaction->status,
+                    'date' => $transaction->transaction_date->format('Y-m-d H:i:s'),
+                    'formatted_date' => $transaction->transaction_date->format('M d, Y g:i A')
+                ];
+            });
+
+            return response()->json([
+                'message' => 'Transaction history retrieved successfully',
+                'transactions' => $formattedTransactions,
+                'pagination' => [
+                    'current_page' => $transactions->currentPage(),
+                    'last_page' => $transactions->lastPage(),
+                    'total' => $transactions->total()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get transaction history: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to get transaction history',
+                'error' => true
+            ], 500);
+        }
     }
 
     /**
-     * Update the specified resource in storage.
+     * Submit Feedback (One-time per vendor)
      */
-    public function update(Request $request, string $id)
+    public function submitFeedback(Request $request)
     {
-        //
+        try {
+            $validator = Validator::make($request->all(), [
+                'vendor_id' => 'required|exists:vendors,id',
+                'stars' => 'required|integer|min:1|max:5',
+                'review_comment' => 'required|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                    'error' => true
+                ], 422);
+            }
+
+            $student = $request->user()->student;
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Student profile not found',
+                    'error' => true
+                ], 404);
+            }
+
+            // Check if feedback already exists
+            $existingRating = Rating::where('student_id', $student->id)
+                ->where('vendor_id', $request->vendor_id)
+                ->first();
+
+            if ($existingRating) {
+                return response()->json([
+                    'message' => 'You have already submitted feedback for this vendor',
+                    'error' => true
+                ], 409);
+            }
+
+            DB::beginTransaction();
+
+            // Create rating
+            $rating = Rating::create([
+                'student_id' => $student->id,
+                'vendor_id' => $request->vendor_id,
+                'stars' => $request->stars,
+                'review_comment' => $request->review_comment,
+                'review_date' => now()
+            ]);
+
+            // Update vendor's average rating
+            $this->updateVendorRating($request->vendor_id);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Feedback submitted successfully',
+                'rating' => [
+                    'id' => $rating->id,
+                    'stars' => $rating->stars,
+                    'review_comment' => $rating->review_comment,
+                    'review_date' => $rating->review_date->format('Y-m-d H:i:s')
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Feedback submission failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Feedback submission failed: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Get Available Vendors for Feedback
      */
-    public function destroy(string $id)
+    public function getVendorsForFeedback(Request $request)
     {
-        //
+        try {
+            $student = $request->user()->student;
+            if (!$student) {
+                return response()->json([
+                    'message' => 'Student profile not found',
+                    'error' => true
+                ], 404);
+            }
+
+            // Get vendors from student's completed transactions
+            $vendorIds = Transaction::where('student_id', $student->id)
+                ->where('status', 'COMPLETED')
+                ->distinct()
+                ->pluck('vendor_id');
+
+            // Get vendors not yet rated by this student
+            $ratedVendorIds = Rating::where('student_id', $student->id)
+                ->pluck('vendor_id');
+
+            $availableVendors = Vendor::whereIn('id', $vendorIds)
+                ->whereNotIn('id', $ratedVendorIds)
+                ->get(['id', 'business_name', 'service_category', 'average_rating']);
+
+            return response()->json([
+                'message' => 'Available vendors for feedback retrieved',
+                'vendors' => $availableVendors
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get vendors for feedback: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to get vendors for feedback',
+                'error' => true
+            ], 500);
+        }
+    }
+
+    /**
+     * Update vendor's average rating
+     */
+    private function updateVendorRating(int $vendorId): void
+    {
+        $vendor = Vendor::find($vendorId);
+        if ($vendor) {
+            $ratings = Rating::where('vendor_id', $vendorId);
+            $vendor->update([
+                'average_rating' => $ratings->avg('stars') ?? 0,
+                'total_reviews' => $ratings->count()
+            ]);
+        }
+    }
+
+    /**
+     * Logout
+     */
+    public function logout(Request $request)
+    {
+        try {
+            $request->user()->currentAccessToken()->delete();
+
+            return response()->json([
+                'message' => 'Logged out successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Logout failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Logout failed',
+                'error' => true
+            ], 500);
+        }
     }
 }

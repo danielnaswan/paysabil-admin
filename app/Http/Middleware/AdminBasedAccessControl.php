@@ -17,10 +17,10 @@ class AdminBasedAccessControl
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if(!Auth::check()) return redirect('/login');
+        if (!Auth::check()) return redirect('/login');
 
-        if(Auth::user()->role === UserRole::ADMIN) return $next($request);
+        if (Auth::user()->role === UserRole::ADMIN) return $next($request);
 
-        return redirect('/logout')->with('message', 'youre not admin lol');
+        return redirect('/logout')->with('message', 'Access denied. Admin credentials required.');
     }
 }
