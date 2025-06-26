@@ -171,3 +171,51 @@ Route::get('/test-time', function () {
 		'current_time' => now(),
 	];
 });
+
+Route::get('/test-image-display', function () {
+    // Your specific image URL
+    $originalUrl = "https://fls-9f2aa4a9-b0ec-4463-97f9-da6fb9ada260.367be3a2035528943240074d0096e0cd.r2.cloudflarestorage.com/public/profile_pictures/1750813653_685b4bd5cfa8a.png";
+    
+    // Extract the file path from the URL
+    $parsed = parse_url($originalUrl);
+    $path = ltrim($parsed['path'], '/');
+    
+    // Remove 'public/' prefix if present
+    if (str_starts_with($path, 'public/')) {
+        $path = substr($path, 7);
+    }
+    
+    // Result should be: profile_pictures/1750813653_685b4bd5cfa8a.png
+    
+    try {
+        // Check if file exists in private disk
+        $fileExists = Storage::disk('private')->exists($path);
+        
+        if (!$fileExists) {
+            $errorMessage = "File does not exist at path: {$path}";
+            $signedUrl = null;
+        } else {
+            // Generate signed URL using Storage::disk('private')
+            $signedUrl = Storage::disk('private')->temporaryUrl($path, now()->addHours(2));
+            $errorMessage = null;
+        }
+        
+        // Return HTML page to display the image
+        return view('test-image', [
+            'originalUrl' => $originalUrl,
+            'extractedPath' => $path,
+            'fileExists' => $fileExists,
+            'signedUrl' => $signedUrl,
+            'errorMessage' => $errorMessage
+        ]);
+        
+    } catch (\Exception $e) {
+        return view('test-image', [
+            'originalUrl' => $originalUrl,
+            'extractedPath' => $path,
+            'fileExists' => false,
+            'signedUrl' => null,
+            'errorMessage' => 'Error: ' . $e->getMessage()
+        ]);
+    }
+});
